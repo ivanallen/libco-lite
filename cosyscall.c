@@ -23,38 +23,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef __COROUTINE_H__
-#define __COROUTINE_H__
 
-#define NR_TASKS 10240 // 每个线程最多允许 10240 个协程
-#define STACK_SIZE 1024*128 // 32bit 128*4K  64bit 128*8K 
+#include "cosyscall.h"
 
-#define COROUTINE_RUNNING 0
-#define COROUTINE_SLEEP 1
-#define COROUTINE_EXIT 2
-
-struct task_struct_t;
-// 每个线程持有一个此结构体，用来登记协程
-struct thread_env_t {
-    int task_count; // 当前任务个数，最小为 1，因为主协程也算一个任务
-    struct task_struct_t *current; // 当前线程中正在运行的那个协程
-    struct task_struct_t *task[NR_TASKS]; // 线程最多持有 10240 个协程
-};
-
-struct task_struct_t {
-  int id; // 协程 id
-  unsigned int wakeuptime; // 线程唤醒时间
-  void *esp; // 保存 esp, 64bit 里叫 rsp，不要改动这个字段的位置！
-  void (*co_fn)();
-  void *arg; // 作参数，暂未使用
-  struct thread_env_t *thread_env; // 指向自己的线程环境
-  int status; // 协程状态
-  void *stack[STACK_SIZE]; // 协程运行栈。
-};
-
-
-int co_create(int *cid, void (*start_routine)());
-int co_join(int cid);
-void co_sleep(int seconds);
-
-#endif //__COROUTINE_H__
+pid_t gettid() {
+   pid_t tid;
+   tid = syscall(SYS_gettid);
+}

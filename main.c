@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Allen. 
+ * Copyright (c) 2018, ivan_allen@163.com. 
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -29,51 +29,91 @@
 
 
 void fun1() {
-  int i = 5;
-  while(i--) {
-    printf("hello, I'm fun1\n");
-    mysleep(4);
-  }
+    int i = 2;
+    while(i--) {
+        printf("hello, I'm fun1\n");
+        co_sleep(4);
+    }
 }
 
 void fun2() {
-  int i = 10;
-  while(i--) {
-    printf("hello, I'm fun2\n");
-    mysleep(1);
-  }
+    int i = 10;
+    while(i--) {
+        printf("hello, I'm fun2\n");
+        co_sleep(1);
+    }
 }
 
 void fun3() {
-  int i = 2;
-  while(i--) {
-    printf("hello, I'm fun3\n");
-    mysleep(1);
-  }
+    int i = 2;
+    while(i--) {
+        printf("hello, I'm fun3\n");
+        co_sleep(1);
+    }
+}
+
+void fun4() {
+    int i = 8;
+    while(i--) {
+        printf("hello, I'm fun4\n");
+        co_sleep(1);
+    }
+}
+
+void fun5() {
+    int i = 4;
+    while(i--) {
+        printf("hello, I'm fun5\n");
+        co_sleep(1);
+    }
+}
+
+// 在另一个线程里起协程
+void* th_fn(void* arg) {
+    int tid4, tid5;
+    co_create(&tid4, fun4);
+    printf("create co %d\n", tid4);
+    co_create(&tid5, fun5);
+    printf("create co %d\n", tid5);
+    int i = 2;
+    while(i--) {
+        printf("hello, I'm thread\n");
+        co_sleep(3);
+    }
+    co_join(tid4);
+    co_join(tid5);
+    printf("thread over!\n");
+    return NULL;
 }
 
 
 int main() {
-  
-  int tid1, tid2, tid3;
-  co_create(&tid1, fun1);
-  printf("create co %d\n", tid1);
-  co_create(&tid2, fun2);
-  printf("create co %d\n", tid2);
-  co_create(&tid3, fun3);
-  printf("create co %d\n", tid3);
-  
-  int i = 2;
-  while(i--) {
-    printf("hello, I'm main\n");
-    mysleep(3);
-  }
-  co_join(tid1);
-  co_join(tid2);
-  co_join(tid3);
 
-  printf("over!\n");
-  return 0;
+    int tid1, tid2, tid3;
+    co_create(&tid1, fun1);
+    printf("create co %d\n", tid1);
+    co_create(&tid2, fun2);
+    printf("create co %d\n", tid2);
+    co_create(&tid3, fun3);
+    printf("create co %d\n", tid3);
+
+    pthread_t id;
+    pthread_create(&id, NULL, th_fn, NULL);
+
+    int i = 2;
+    while(i--) {
+        printf("hello, I'm main\n");
+        co_sleep(3);
+    }
+
+    co_join(tid1);
+    co_join(tid2);
+    co_join(tid3);
+
+    pthread_join(id);
+
+    printf("over!\n");
+    return 0;
 }
 
 

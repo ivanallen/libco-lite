@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Allen. 
+ * Copyright (c) 2018, ivan_allen@163.com. 
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*void switch_to(struct task_struct *next)*/
+/*void switch_to(struct task_struct *cur, struct task_struct *next)*/
 
 .section .text
 .global switch_to
@@ -43,10 +43,10 @@ switch_to:
   pushfl
  
   /* 准备切换栈 */
-  movl current, %eax /* 取 current 基址放到 eax */
+  movl 8(%ebp), %eax /* 取 current 基址放到 eax */
   movl %esp, 8(%eax) /* 保存当前 esp 到线程结构体 */ 
-  movl 8(%ebp), %eax /* 取下一个线程结构体基址*/
-  movl %eax, current /* 更新 current */
+  movl 16(%ebp), %eax /* 取下一个协程结构体基址*/
+  /* movl %eax, current 更新 current 到外面实现 */
   movl 8(%eax), %esp /* 切换到下一个线程的栈 */
 
   /* 恢复现场, 到这里，已经进入另一个线程环境了，本质是 esp 改变 */
@@ -80,10 +80,10 @@ switch_to:
   pushq %r15
 
   /* 准备切换栈 */
-  movq current, %rax
-  movq %rsp, 8(%rax)
-  movq %rdi, %rax /* switch_to 的参数 */
-  movq %rax, current
+  movq %rdi, %rax /* current 参数保存在 rdi 里 */
+  movq %rsp, 8(%rax) /* 取当前栈顶保存到 current->esp */
+  movq %rsi, %rax /* next 参数 保存在 rsi 里 */
+  /* movq %rax, current  更新 current 到外面实现 */
   movq 8(%rax), %rsp /* 切换到下一个协程 */
 
   popq %r15
