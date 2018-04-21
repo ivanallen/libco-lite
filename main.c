@@ -28,7 +28,7 @@
 #include "coroutine.h"
 
 
-void fun1() {
+void* fun1(void *arg) {
     int i = 2;
     while(i--) {
         printf("hello, I'm fun1\n");
@@ -36,7 +36,7 @@ void fun1() {
     }
 }
 
-void fun2() {
+void* fun2(void *arg) {
     int i = 10;
     while(i--) {
         printf("hello, I'm fun2\n");
@@ -44,15 +44,15 @@ void fun2() {
     }
 }
 
-void fun3() {
+void* fun3(void *info) {
     int i = 2;
     while(i--) {
-        printf("hello, I'm fun3\n");
+        printf("hello, I'm fun3:%s\n", (char*)info);
         co_sleep(1);
     }
 }
 
-void fun4() {
+void* fun4(void *arg) {
     int i = 8;
     while(i--) {
         printf("hello, I'm fun4\n");
@@ -60,7 +60,7 @@ void fun4() {
     }
 }
 
-void fun5() {
+void* fun5(void *arg) {
     int i = 4;
     while(i--) {
         printf("hello, I'm fun5\n");
@@ -71,9 +71,9 @@ void fun5() {
 // 在另一个线程里起协程
 void* th_fn(void* arg) {
     int tid4, tid5;
-    co_create(&tid4, fun4);
+    co_create(&tid4, fun4, NULL);
     printf("create co %d\n", tid4);
-    co_create(&tid5, fun5);
+    co_create(&tid5, fun5, NULL);
     printf("create co %d\n", tid5);
     int i = 2;
     while(i--) {
@@ -90,11 +90,12 @@ void* th_fn(void* arg) {
 int main() {
 
     int tid1, tid2, tid3;
-    co_create(&tid1, fun1);
+    co_create(&tid1, fun1, NULL);
     printf("create co %d\n", tid1);
-    co_create(&tid2, fun2);
+    co_create(&tid2, fun2, NULL);
     printf("create co %d\n", tid2);
-    co_create(&tid3, fun3);
+    char info[] = "hello world";
+    co_create(&tid3, fun3, info);
     printf("create co %d\n", tid3);
 
     pthread_t id;

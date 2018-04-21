@@ -39,14 +39,15 @@ struct thread_env_t *g_thread_env_arr[20480] = {0}; // 最多 10240 个线程
 
 // 线程启动函数
 static void start(struct task_struct_t *tsk) {
-    tsk->co_fn();
+    tsk->co_fn(tsk->arg);
     tsk->status = COROUTINE_EXIT;
     schedule();
 }
 
 /**
  * 创建线程环境块
- * 说明：如果存在就直接返回
+ * 说明：如果存在就直接返回。
+ * 服务器程序一般启动固定个数的线程，因此申请的内存可以不必释放。
  */
 struct thread_env_t *co_get_thread_env() {
     pid_t tid = gettid();
@@ -68,7 +69,7 @@ struct thread_env_t *co_get_thread_env() {
     return thread_env;
 }
 
-int co_create(int *cid, void (*start_routine)()) {
+int co_create(int *cid, void *(*start_routine)(void *), void *arg) {
     int id = -1;
     // 获取当前线程环境块
     struct thread_env_t *thread_env = co_get_thread_env();
@@ -81,10 +82,11 @@ int co_create(int *cid, void (*start_routine)()) {
     // 创建协程控制块
     struct task_struct_t *tsk = (struct task_struct_t*)calloc(sizeof(struct task_struct_t), 1);
     thread_env->task[id] = tsk;
+    ++thread_env->task_count;
 
     tsk->id = id;
     tsk->co_fn = start_routine;
-    tsk->arg = NULL;
+    tsk->arg = arg;
     tsk->thread_env = thread_env;
     tsk->wakeuptime = 0;
     tsk->status = COROUTINE_RUNNING;
@@ -92,6 +94,8 @@ int co_create(int *cid, void (*start_routine)()) {
     void **stack = tsk->stack; // 栈顶界限
     // 初始化 switch_to 函数栈帧
     // 下面大部分填充实际是无意义的，可以配合调试用
+    // x64 只有一种调用约定，参数入栈直接使用寄存器
+    // gcc 中，前 6 个参数使用 %rdi，%rsi，%rdx，%rcx，%r8，%r9，更多的就使用栈了。
 #if defined(__x86_64__)
     tsk->esp = (void *)(stack+STACK_SIZE-18);
     stack[STACK_SIZE-18] = (void *)15; // r15
@@ -140,4 +144,5 @@ int co_join(int cid) {
     }
     free(task[cid]);
     task[cid] = NULL;
+    --thread_env->task_count;
 }

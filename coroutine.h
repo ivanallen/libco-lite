@@ -45,7 +45,7 @@ struct task_struct_t {
   int id; // 协程 id
   unsigned int wakeuptime; // 线程唤醒时间
   void *esp; // 保存 esp, 64bit 里叫 rsp，不要改动这个字段的位置！
-  void (*co_fn)();
+  void *(*co_fn)(void *);
   void *arg; // 作参数，暂未使用
   struct thread_env_t *thread_env; // 指向自己的线程环境
   int status; // 协程状态
@@ -53,7 +53,7 @@ struct task_struct_t {
 };
 
 
-int co_create(int *cid, void (*start_routine)());
+int co_create(int *cid, void *(*start_routine)(void *), void *arg);
 int co_join(int cid);
 void co_sleep(int seconds);
 
