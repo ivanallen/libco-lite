@@ -85,7 +85,8 @@ repeat:
 }
 
 void co_switch_to(struct task_struct_t *next) {
-    struct thread_env_t *thread_env = co_get_thread_env();
+    // struct thread_env_t *thread_env = co_get_thread_env();
+    struct thread_env_t *thread_env = next->thread_env;
     struct task_struct_t *current = thread_env->current;
     thread_env->current = next; // 这一行千万别放到 switch_to 后面
     switch_to(current, next);

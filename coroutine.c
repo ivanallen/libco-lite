@@ -30,11 +30,11 @@
 void schedule();
 
 // static struct task_struct_t init_task = {0, NULL, COROUTINE_RUNNING, 0, 0, {0}};
-static struct task_struct_t init_task = {0, 0, NULL, NULL, NULL, NULL, COROUTINE_RUNNING, {0}};
+// static struct task_struct_t init_task = {0, 0, NULL, NULL, NULL, NULL, COROUTINE_RUNNING, {0}};
 
-struct task_struct_t *current = &init_task;
+// struct task_struct_t *current = &init_task;
 
-struct thread_env_t *g_thread_env_arr[10240] = {0}; // 最多 10240 个线程
+struct thread_env_t *g_thread_env_arr[20480] = {0}; // 最多 10240 个线程
 // struct task_struct_t *task[NR_TASKS] = {&init_task,};
 
 // 线程启动函数
@@ -79,24 +79,27 @@ int co_create(int *cid, void (*start_routine)()) {
     if (cid) *cid = id;
 
     // 创建协程控制块
-    struct task_struct_t *tsk = (struct task_struct_t*)malloc(sizeof(struct task_struct_t));
+    struct task_struct_t *tsk = (struct task_struct_t*)calloc(sizeof(struct task_struct_t), 1);
     thread_env->task[id] = tsk;
 
     tsk->id = id;
     tsk->co_fn = start_routine;
     tsk->arg = NULL;
-    void **stack = tsk->stack; // 栈顶界限
+    tsk->thread_env = thread_env;
     tsk->wakeuptime = 0;
     tsk->status = COROUTINE_RUNNING;
 
+    void **stack = tsk->stack; // 栈顶界限
     // 初始化 switch_to 函数栈帧
-    // 下面这些填充实际是无意义的，可以配合调试用
+    // 下面大部分填充实际是无意义的，可以配合调试用
 #if defined(__x86_64__)
-    tsk->esp = (void *)(stack+STACK_SIZE-16);
-    stack[STACK_SIZE-16] = (void *)15; // r15
-    stack[STACK_SIZE-15] = (void *)14; // r14
-    stack[STACK_SIZE-14] = (void *)13; // r13
-    stack[STACK_SIZE-13] = (void *)12; // r12
+    tsk->esp = (void *)(stack+STACK_SIZE-18);
+    stack[STACK_SIZE-18] = (void *)15; // r15
+    stack[STACK_SIZE-17] = (void *)14; // r14
+    stack[STACK_SIZE-16] = (void *)13; // r13
+    stack[STACK_SIZE-15] = (void *)12; // r12
+    stack[STACK_SIZE-14] = (void *)11; // r11
+    stack[STACK_SIZE-13] = (void *)10; // r10
     stack[STACK_SIZE-12] = (void *)9; // r9
     stack[STACK_SIZE-11] = (void *)8; // r8
     stack[STACK_SIZE-10] = (void *)7; // eflags
@@ -135,7 +138,6 @@ int co_join(int cid) {
     while(task[cid]->status != COROUTINE_EXIT) {
         schedule();
     }
-    printf("thread_env:%p cid:%d\n", thread_env, cid);
-    free(task[cid]); // TODO: 这一行会导致 core，待查
+    free(task[cid]);
     task[cid] = NULL;
 }

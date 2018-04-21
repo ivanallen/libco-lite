@@ -77,12 +77,12 @@ void* th_fn(void* arg) {
     printf("create co %d\n", tid5);
     int i = 2;
     while(i--) {
-        printf("hello, I'm thread\n");
+        printf("hello, I'm thread:%d\n", gettid());
         co_sleep(3);
     }
     co_join(tid4);
     co_join(tid5);
-    printf("thread over!\n");
+    printf("thread %d over!\n", gettid());
     return NULL;
 }
 
@@ -102,15 +102,21 @@ int main() {
 
     int i = 2;
     while(i--) {
-        printf("hello, I'm main\n");
+        printf("hello, I'm main:%d\n", gettid());
         co_sleep(3);
     }
+
+    co_sleep(3);
 
     co_join(tid1);
     co_join(tid2);
     co_join(tid3);
 
-    pthread_join(id);
+    // pthread_join 第二个参数不要忘记了，否则会出现莫名奇妙的现象
+    int ret = pthread_join(id, NULL); 
+    if (ret < 0) {
+        perror("pthread_join");
+    }
 
     printf("over!\n");
     return 0;
