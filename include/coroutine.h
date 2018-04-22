@@ -65,7 +65,8 @@ struct task_struct_t {
   void *arg; // 作参数
   struct thread_env_t *thread_env; // 指向自己的线程环境
   int status; // 协程状态
-  int fd; // 当前阻塞在哪个 fd 上
+  int fds_idx; // 指向最后一个元素的下一个位置。
+  int fds[1024]; // 当前任务阻塞在了哪些 fd 上
   // TAILQ_ENTRY(task_struct_t) block; // 阻塞链表节点
   void *stack[STACK_SIZE]; // 协程运行栈。
 };

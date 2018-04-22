@@ -18,7 +18,7 @@ void *do_client(void *arg) {
     int n = 0;
     char buf[64] = { 0 };
     while(1) {
-        printf("ready to co_read:%d\n", clifd);
+        // printf("ready to co_read:%d\n", clifd);
         n = co_read(clifd, buf, 63);
         if (n < 0) {
             perror("co_read");
@@ -30,6 +30,11 @@ void *do_client(void *arg) {
         }
         buf[n] = '\0';
         printf("recv from %d:%s\n", clifd, buf);
+        n = co_write(clifd, buf, n);
+        if (n < 0) {
+            perror("co_write");
+            exit(-1);
+        }
     }
 }
 

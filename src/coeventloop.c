@@ -27,8 +27,9 @@ int co_eventloop() {
         struct task_struct_t *tsk;
         for(i = 0; i < nready; ++i) {
             ev = &events[i];
-            // printf("event come in:%d\n", ev->data.fd);
-            if (ev->events | EPOLLIN) {
+            printf("event come in:%d events:%d\n", ev->data.fd, ev->events);
+            if (ev->events & (EPOLLIN | EPOLLOUT)) {
+                printf("process event:%d\n", ev->events);
                 tsk = thread_env->epoll.task[ev->data.fd];
                 tsk->status = COROUTINE_RUNNING; // 可被调度 
             }
