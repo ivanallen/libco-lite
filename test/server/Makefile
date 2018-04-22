@@ -1,8 +1,11 @@
 cli:
 	gcc -o cli cli.c
 
-serv:
-	gcc -o serv uppercase.c
+upper:
+	gcc -o upper uppercase.c
+
+reverse:
+	gcc -o reverse reverse.c
 
 clean:
-	rm cli serv
+	rm cli reverse upper
