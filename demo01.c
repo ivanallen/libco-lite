@@ -100,6 +100,7 @@ int main() {
 
     pthread_t id;
     pthread_create(&id, NULL, th_fn, NULL);
+    
 
     int i = 2;
     while(i--) {
@@ -107,7 +108,6 @@ int main() {
         co_sleep(3);
     }
 
-    co_sleep(3);
 
     co_join(tid1);
     co_join(tid2);

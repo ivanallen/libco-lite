@@ -26,6 +26,10 @@
 #include "coroutine.h"
 #include "cosyscall.h"
 #include <stdlib.h>
+#include <stdio.h>
+#include <sys/epoll.h>
+
+#define MAX_THREAD_NUM 10240
 
 void schedule();
 
@@ -34,37 +38,52 @@ void schedule();
 
 // struct task_struct_t *current = &init_task;
 
-struct thread_env_t *g_thread_env_arr[20480] = {0}; // 最多 10240 个线程
+struct thread_env_t *g_thread_env_arr[MAX_THREAD_NUM] = {0}; // 最多 10240 个线程
 // struct task_struct_t *task[NR_TASKS] = {&init_task,};
 
-// 线程启动函数
+// 协程启动函数
 static void start(struct task_struct_t *tsk) {
     tsk->co_fn(tsk->arg);
+    printf("coroutine %d finished\n", tsk->id);
+    struct thread_env_t *thread_env = tsk->thread_env;
     tsk->status = COROUTINE_EXIT;
+    if (tsk->fd > 0) {
+        printf("coroutine %d, release fd:%d\n", tsk->fd);
+        epoll_ctl(thread_env->epoll.epfd, EPOLL_CTL_DEL, tsk->fd, NULL);
+        thread_env->epoll.task[tsk->fd] = NULL;
+    }
+    // 自然退出
+    // free(tsk); // 为啥会 core? 这里不能释放！！！释放了协程栈就没了。。
+    // 调度出去后永远就不能回来了
+    // 否则段错误，栈里面会有 0x64 字样
     schedule();
+    fprintf(stderr, "Fatal: error schedule!\n");
+    exit(-1);
 }
 
 /**
- * 创建线程环境块
+ * 创建协程环境块
  * 说明：如果存在就直接返回。
  * 服务器程序一般启动固定个数的线程，因此申请的内存可以不必释放。
  */
 struct thread_env_t *co_get_thread_env() {
     pid_t tid = gettid();
-    struct thread_env_t *thread_env = g_thread_env_arr[tid];
+    struct thread_env_t *thread_env = g_thread_env_arr[tid % MAX_THREAD_NUM];
     struct task_struct_t *init_task = NULL;
     if (!thread_env) {
-        thread_env = (struct thread_env_t*)calloc(sizeof(struct thread_env_t), 1);
+        thread_env = (struct thread_env_t*)calloc(1, sizeof(struct thread_env_t));
         thread_env->task_count = 1;
         // 创建主协程，即初始任务。
-        init_task = (struct task_struct_t*)calloc(sizeof(struct task_struct_t), 1);
+        init_task = (struct task_struct_t*)calloc(1, sizeof(struct task_struct_t));
         // init_task 其它字段全部为空。
         init_task->thread_env = thread_env;
         init_task->status = COROUTINE_RUNNING;
 
         thread_env->task[0] = init_task;
         thread_env->current = init_task;
-        g_thread_env_arr[tid] = thread_env;
+        thread_env->epoll.epfd = epoll_create(1);
+
+        g_thread_env_arr[tid % MAX_THREAD_NUM] = thread_env;
     }
     return thread_env;
 }
@@ -80,9 +99,10 @@ int co_create(int *cid, void *(*start_routine)(void *), void *arg) {
     if (cid) *cid = id;
 
     // 创建协程控制块
-    struct task_struct_t *tsk = (struct task_struct_t*)calloc(sizeof(struct task_struct_t), 1);
+    struct task_struct_t *tsk = (struct task_struct_t*)malloc(sizeof(struct task_struct_t));
+    // printf("malloc %p, size:%d\n", tsk, sizeof(struct task_struct_t));
     thread_env->task[id] = tsk;
-    ++thread_env->task_count;
+    thread_env->task_count--;
 
     tsk->id = id;
     tsk->co_fn = start_routine;
@@ -90,6 +110,7 @@ int co_create(int *cid, void *(*start_routine)(void *), void *arg) {
     tsk->thread_env = thread_env;
     tsk->wakeuptime = 0;
     tsk->status = COROUTINE_RUNNING;
+    tsk->fd = -1;
 
     void **stack = tsk->stack; // 栈顶界限
     // 初始化 switch_to 函数栈帧
@@ -137,6 +158,7 @@ int co_create(int *cid, void *(*start_routine)(void *), void *arg) {
 }
 
 int co_join(int cid) {
+    // printf("join %d\n", cid);
     struct thread_env_t *thread_env = co_get_thread_env();
     struct task_struct_t **task = thread_env->task;
     while(task[cid]->status != COROUTINE_EXIT) {
@@ -144,5 +166,5 @@ int co_join(int cid) {
     }
     free(task[cid]);
     task[cid] = NULL;
-    --thread_env->task_count;
+    thread_env->task_count--;
 }

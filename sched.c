@@ -25,6 +25,7 @@
  */
 #include "coroutine.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <sys/time.h>
 
 // extern struct task_struct_t *current;
@@ -72,7 +73,9 @@ repeat:
         i = (i + 1) % NR_TASKS;
         if (i == current_id) {
             // 循环了一圈说明没找到可被调度的线程, 这里很耗 cpu，需要修改
-            // goto 无害论
+            if (current->status == COROUTINE_RUNNING) {
+                return current;
+            }
             goto repeat;
         }
         if (task[i] && task[i]->status == COROUTINE_RUNNING) {
@@ -88,6 +91,11 @@ void co_switch_to(struct task_struct_t *next) {
     // struct thread_env_t *thread_env = co_get_thread_env();
     struct thread_env_t *thread_env = next->thread_env;
     struct task_struct_t *current = thread_env->current;
+    // 这一行 printf 可以清楚的看到切换时机
+    // printf("tsk %d(%d) ----> %d(%d)\n", current->id, current->status, next->id, next->status);
+    if (current == next) {
+        return;
+    }
     thread_env->current = next; // 这一行千万别放到 switch_to 后面
     switch_to(current, next);
 }

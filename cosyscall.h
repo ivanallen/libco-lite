@@ -32,7 +32,12 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h> /* superset of previous */
 
 pid_t gettid();
+int co_accept(int listenfd, struct sockaddr *addr, socklen_t *len);
+int co_read(int fd, void *buf, size_t len);
 
 #endif // __COSYSCALLH__

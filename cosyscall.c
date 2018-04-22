@@ -24,9 +24,74 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/epoll.h>
 #include "cosyscall.h"
+#include "coroutine.h"
+
+struct thread_env_t *co_get_thread_env();
 
 pid_t gettid() {
    pid_t tid;
    tid = syscall(SYS_gettid);
+}
+
+
+int co_accept(int listenfd, struct sockaddr *addr, socklen_t *len) {
+    struct thread_env_t *thread_env = co_get_thread_env();
+    struct epoll_event event;
+    struct task_struct_t *tsk;
+    int epfd = thread_env->epoll.epfd;
+
+    event.events = EPOLLIN;
+    event.data.fd = listenfd;
+
+
+    thread_env->current->status = COROUTINE_WAIT; // 设置为阻塞状态
+    thread_env->current->fd = listenfd;
+
+    if (thread_env->epoll.task[listenfd]) {
+        schedule();
+        return accept(listenfd, addr, len);
+    };
+
+    thread_env->epoll.task[listenfd] = thread_env->current;
+
+    int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, listenfd, &event);
+    if (ret < 0) {
+        return ret;
+    }
+
+    schedule();
+
+    // puts("accept");
+    return accept(listenfd, addr, len);
+}
+
+int co_read(int fd, void *buf, size_t len) {
+    struct thread_env_t *thread_env = co_get_thread_env();
+    struct epoll_event event;
+    struct task_struct_t *tsk;
+    int epfd = thread_env->epoll.epfd;
+
+    event.events = EPOLLIN;
+    event.data.fd = fd;
+
+    thread_env->current->status = COROUTINE_WAIT; // 设置为阻塞状态
+    thread_env->current->fd = fd;
+    if (thread_env->epoll.task[fd]) {
+        schedule();
+        return read(fd, buf, len);
+    };
+    thread_env->epoll.task[fd] = thread_env->current;
+
+    // puts("co_read:epoll_ctl add");
+    int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
+    if (ret < 0) {
+        return ret;
+    }
+
+    schedule();
+
+    // puts("read");
+    return read(fd, buf, len);
 }
