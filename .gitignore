@@ -1,5 +1,7 @@
 *.s
 *.o
+*.swp
+*.swo
 demo01
 demo02
 demo03
