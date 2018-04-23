@@ -5,7 +5,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <sys/epoll.h>
-
+#include <stdlib.h>
 
 #define PORT 9999
 #define MAXSIZE 1000
@@ -107,7 +107,7 @@ int main (int argc, char **argv) {
 	
 	//loop	
 	while (1) {
-		int nready = epoll_wait(epollfd, &wait_events, 10, -1);
+		int nready = epoll_wait(epollfd, wait_events, 10, -1);
 		
 		printf("serv:epoll_wait returned.\n");
 
