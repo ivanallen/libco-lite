@@ -1,11 +1,19 @@
-cli:
-	gcc -o cli cli.c
+cli:./build
+	gcc -o ./build/cli cli.c
 
-upper:
-	gcc -o upper uppercase.c
+uppercase:./build
+	gcc -o ./build/uppercase uppercase.c
 
-reverse:
-	gcc -o reverse reverse.c
+reverse:./build
+	gcc -o ./build/reverse reverse.c
+
+all:./build
+	gcc -o ./build/uppercase uppercase.c
+	gcc -o ./build/cli cli.c
+	gcc -o ./build/reverse reverse.c
+
+build:
+	mkdir build
 
 clean:
-	rm cli reverse upper
+	rm ./build/* 
