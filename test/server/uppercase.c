@@ -31,7 +31,7 @@ int handle(int fd) {
 	
 	printf("serv:will be send msg to client[%s], len = %d\n", buf, n);
 	
-	write(fd, buf, n);
+	n = write(fd, buf, n);
 	
 	printf("serv: send msg to client[%s]. len = %d\n", buf, n);
 	

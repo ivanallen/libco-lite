@@ -14,9 +14,31 @@
 int handle(int fd);
 size_t reverse(char buf[], int n);
 
+/**
+*returned -1 means peer socket closed,otherwise means the len of buf
+*/
+int get_line(int fd, char *buf, size_t len) {
+	size_t n = 0;
+	int curr = 0;
+	do {
+		
+		printf("+++++++++n=%d,curr=%d\n", n, curr);
+		n = read(fd, buf + curr, len);
+		curr += n;
+		printf("+++++++++n=%d,curr=%d ch = %d\n", n, curr, buf[curr - 1]);
+	} while(n != 0 && buf[curr - 1]  != '\n');	
+	
+	if (n == 0) {
+		return -1;
+	}
+	
+	return curr;
+}
+
 int handle(int fd) {
 	char buf[MAXSIZE];
-	size_t n = read(fd, buf, MAXSIZE);
+
+	size_t n = get_line(fd, buf, MAXSIZE);
 	buf[n] = '\n';
 	
 	printf("serv:msg from client[%s]. len = %d\n", buf, n);

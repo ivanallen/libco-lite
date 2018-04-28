@@ -11,11 +11,17 @@
 void str_cli(int fd) {
 	char buf[100];
 	while (1) {
+		memset(buf, 0, 100);
 		printf("send to:");
-		scanf("%s", buf);
-		write(fd, buf, strlen(buf));
+		//scanf("%s", buf);
+		gets(buf);
+		printf("sending...\n");
+		size_t len = strlen(buf);
+		buf[len] = '\n';
+		write(fd, buf, len + 1);
 
-		read(fd, buf, 10);
+		int n = read(fd, buf, 100);
+		printf("cli>>>rece from server %d bytes\n", n);
 		printf("from server: %s\n", buf);
 	}
 }
