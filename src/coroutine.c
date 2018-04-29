@@ -26,6 +26,7 @@
 #include "coroutine.h"
 #include "cosyscall.h"
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <sys/epoll.h>
 
@@ -46,7 +47,7 @@ struct thread_env_t *g_thread_env_arr[MAX_THREAD_NUM] = {0}; // 最多 10240 个
  */
 static void start(struct task_struct_t *tsk) {
     tsk->co_fn(tsk->arg);
-    printf("coroutine %d finished\n", tsk->id);
+    LOG_DEBUG("coroutine %d finished\n", tsk->id);
     struct thread_env_t *thread_env = tsk->thread_env;
     int fd;
     tsk->status = COROUTINE_EXIT;
@@ -54,7 +55,7 @@ static void start(struct task_struct_t *tsk) {
     // 清理当前任务上所有的描述符
     while (tsk->fds_idx > 0) {
         fd = tsk->fds[--tsk->fds_idx];
-        printf("coroutine %d, release fd:%d\n", tsk->id, fd);
+        LOG_DEBUG("coroutine %d, release fd:%d\n", tsk->id, fd);
         epoll_ctl(thread_env->epoll.epfd, EPOLL_CTL_DEL, fd, NULL);
         thread_env->epoll.task[fd] = NULL;
     }
@@ -63,7 +64,7 @@ static void start(struct task_struct_t *tsk) {
     // 调度出去后永远就不能回来了
     // 否则段错误，栈里面会有 0x64 字样
     schedule();
-    fprintf(stderr, "Fatal: error schedule!\n");
+    LOG_ERROR("Fatal: error schedule!\n");
     exit(-1);
 }
 
@@ -89,6 +90,11 @@ struct thread_env_t *co_get_thread_env() {
         thread_env->current = init_task;
         thread_env->epoll.epfd = epoll_create(1);
 
+        int i;
+        for (i = 0; i < 1024; ++i) {
+            TAILQ_INIT(&(thread_env->epoll.block_queue[i]));
+        }
+
         g_thread_env_arr[tid % MAX_THREAD_NUM] = thread_env;
     }
     return thread_env;
@@ -105,7 +111,7 @@ int co_create(int *cid, void *(*start_routine)(void *), void *arg) {
     if (cid) *cid = id;
 
     // 创建协程控制块
-    struct task_struct_t *tsk = (struct task_struct_t*)malloc(sizeof(struct task_struct_t));
+    struct task_struct_t *tsk = (struct task_struct_t*)calloc(sizeof(struct task_struct_t), 1);
     // printf("malloc %p, size:%d\n", tsk, sizeof(struct task_struct_t));
     thread_env->task[id] = tsk;
     thread_env->task_count--;

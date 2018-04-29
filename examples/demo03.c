@@ -18,7 +18,7 @@ void *do_client(void *arg) {
     int n = 0;
     char buf[64] = { 0 };
     while(1) {
-        // printf("ready to co_read:%d\n", clifd);
+        printf("ready to co_read:%d\n", clifd);
         n = co_read(clifd, buf, 63);
         if (n < 0) {
             perror("co_read");
@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
     if (argc > 2) {
         port = atoi(argv[2]);
     }
+    printf("listen %s:%d\n", ip, port);
     struct sockaddr_in serv_addr = { 0 };
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip);

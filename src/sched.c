@@ -92,7 +92,7 @@ void co_switch_to(struct task_struct_t *next) {
     struct thread_env_t *thread_env = next->thread_env;
     struct task_struct_t *current = thread_env->current;
     // 这一行 printf 可以清楚的看到切换时机
-    // printf("tsk %d(%d) ----> %d(%d)\n", current->id, current->status, next->id, next->status);
+    // LOG_DEBUG("tsk %d(%d) ----> %d(%d)\n", current->id, current->status, next->id, next->status);
     if (current == next) {
         return;
     }

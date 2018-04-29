@@ -24,3 +24,25 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "util.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
+
+
+void now(char *time_str) {
+    struct timeval t;
+    struct tm tm;
+    gettimeofday(&t, NULL);
+
+    localtime_r(&t.tv_sec, &tm);
+    snprintf(time_str, 64, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+            t.tv_usec / 1000);
+}
