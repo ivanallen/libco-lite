@@ -25,9 +25,11 @@ void *fun(void *arg) {
 
 int main() {
     int cid;
+    int i = 5;
     co_create(&cid, fun, "Hello");
     while(i--) {
         printf("hello, I'm main\n");
+        co_sleep(1);
     }
     co_join(cid);
     printf("over!\n");
