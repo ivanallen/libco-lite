@@ -41,14 +41,14 @@ void str_cli(int fd) {
 		memset(buf, 0, 100);
 		printf("send to:");
 		//scanf("%s", buf);
-		gets(buf);
-		printf("sending...\n");
+		fgets(buf, 100, stdin);
+		//printf("sending...\n");
 		size_t len = strlen(buf);
 		buf[len] = '\n';
 		write(fd, buf, len + 1);
 
 		int n = read(fd, buf, 100);
-		printf("cli>>>rece from server %d bytes\n", n);
+		//printf("cli>>>rece from server %d bytes\n", n);
 		printf("from server: %s\n", buf);
 	}
 }

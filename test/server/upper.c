@@ -75,6 +75,10 @@ int handle(int fd) {
         return n;
 }
 
+int is_lowercase(char ch) {
+	return ch >= 'a' && ch <= 'z';
+}
+
 size_t upper(char buf[], int n) {
 	int i = 0;
 
@@ -83,11 +87,13 @@ size_t upper(char buf[], int n) {
 			break;		
 		}
 		
-		buf[i] = buf[i] + LOW_UP_SETOFF;
+		if (is_lowercase(buf[i])) {
+			buf[i] = buf[i] + LOW_UP_SETOFF;
+		}
 		++i;
 	} 
 
-	return i+1;
+	return n;
 }
 
 int main (int argc, char **argv) {
