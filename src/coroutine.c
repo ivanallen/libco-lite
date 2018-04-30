@@ -34,13 +34,7 @@
 
 void schedule();
 
-// static struct task_struct_t init_task = {0, NULL, COROUTINE_RUNNING, 0, 0, {0}};
-// static struct task_struct_t init_task = {0, 0, NULL, NULL, NULL, NULL, COROUTINE_RUNNING, {0}};
-
-// struct task_struct_t *current = &init_task;
-
 struct thread_env_t *g_thread_env_arr[MAX_THREAD_NUM] = {0}; // 最多 10240 个线程
-// struct task_struct_t *task[NR_TASKS] = {&init_task,};
 
 /**
  * 协程启动函数
@@ -57,7 +51,8 @@ static void start(struct task_struct_t *tsk) {
         fd = tsk->fds[--tsk->fds_idx];
         LOG_DEBUG("coroutine %d, release fd:%d\n", tsk->id, fd);
         epoll_ctl(thread_env->epoll.epfd, EPOLL_CTL_DEL, fd, NULL);
-        thread_env->epoll.task[fd] = NULL;
+        TAILQ_REMOVE(&thread_env->epoll.block_queue[fd], tsk, block_entry);
+        // thread_env->epoll.task[fd] = NULL;
     }
     // 自然退出
     // free(tsk); // 为啥会 core? 这里不能释放！！！释放了协程栈就没了。。
@@ -91,7 +86,7 @@ struct thread_env_t *co_get_thread_env() {
         thread_env->epoll.epfd = epoll_create(1);
 
         int i;
-        for (i = 0; i < 1024; ++i) {
+        for (i = 0; i < MAX_FD; ++i) {
             TAILQ_INIT(&(thread_env->epoll.block_queue[i]));
         }
 
@@ -114,7 +109,7 @@ int co_create(int *cid, void *(*start_routine)(void *), void *arg) {
     struct task_struct_t *tsk = (struct task_struct_t*)calloc(sizeof(struct task_struct_t), 1);
     // printf("malloc %p, size:%d\n", tsk, sizeof(struct task_struct_t));
     thread_env->task[id] = tsk;
-    thread_env->task_count--;
+    thread_env->task_count++;
 
     tsk->id = id;
     tsk->co_fn = start_routine;

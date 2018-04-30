@@ -51,10 +51,11 @@ int add_queue(int fd, int events) {
 
     current = thread_env->current;
     current->status = COROUTINE_WAIT; // 设置为阻塞状态
-    current->revents[fd] &= ~events;
+    current->revents[fd] &= ~events; // 清理已经对应 bit 位
 
     if (current->events[fd].data.fd <= 0) {
         // 从未监听过此描述符，第一次加入 epoll 监控
+        current->fds[current->fds_idx++] = fd; // 当前协程阻塞在此 fd 上
         current->events[fd].data.fd = fd;
         current->events[fd].events = EPOLLIN;
         int ret = epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
@@ -88,13 +89,12 @@ int co_accept(int listenfd, struct sockaddr *addr, socklen_t *len) {
     event.data.fd = listenfd;
 
     current = thread_env->current;
-    current->status = COROUTINE_WAIT; // 设置为阻塞状态
 
     if ((ret = add_queue(listenfd, EPOLLIN)) < 0) {
         return ret;
     }
     
-    current->fds[current->fds_idx++] = listenfd; // 当前协程阻塞在此 fd 上
+    // current->fds[current->fds_idx++] = listenfd; // 当前协程阻塞在此 fd 上
 
     while(!(current->revents[listenfd] & EPOLLIN)) {
         current->status = COROUTINE_WAIT;
@@ -122,7 +122,7 @@ int co_read(int fd, void *buf, size_t len) {
         return ret;
     }
 
-    current->fds[current->fds_idx++] = fd; // 当前协程阻塞在此 fd 上
+    // current->fds[current->fds_idx++] = fd; // 当前协程阻塞在此 fd 上
 
     while(!(current->revents[fd] & EPOLLIN)) {
         current->status = COROUTINE_WAIT;
