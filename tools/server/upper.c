@@ -35,15 +35,15 @@
 #include <stdlib.h>
 
 #define PORT 9999
-#define MAXSIZE 1000
+#define MAXSIZE 1024
 #define LOW_UP_SETOFF ('A' - 'a')
 
 int handle(int fd);
 size_t upper(char buf[], int n);
 
 /**
-*returned -1 means peer socket closed,otherwise means the len of buf
-*/
+ * returned -1 means peer socket closed,otherwise means the len of buf
+ */
 int get_line(int fd, char *buf, size_t len) {
         size_t n = 0;
         int curr = 0;
