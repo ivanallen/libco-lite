@@ -2,6 +2,7 @@
 *.o
 *.swp
 *.swo
+*.a
 demo01
 demo02
 demo03

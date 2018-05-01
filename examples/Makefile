@@ -1,14 +1,14 @@
 CC=gcc
-CFLAGS=-g -I../include
+CFLAGS=-g -I../include -Wno-int-to-pointer-cast
 LFLAGS=-L../src/libs -lpthread -lco-lite
 
 all:demo01 demo02 demo03
 
-demo01:demo01.c
+demo01:demo01.c ../src/libs/libco-lite.a
 	${CC} ${CFLAGS} -o $@ $^ ${LFLAGS} 
-demo02:demo02.c
+demo02:demo02.c ../src/libs/libco-lite.a
 	${CC} ${CFLAGS} -o $@ $^ ${LFLAGS} 
-demo03:demo03.c
+demo03:demo03.c ../src/libs/libco-lite.a
 	${CC} ${CFLAGS} -o $@ $^ ${LFLAGS} 
 
 clean:

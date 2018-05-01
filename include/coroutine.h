@@ -29,12 +29,15 @@
 #include <unistd.h>
 #include <sys/types.h>          /* See NOTES */
 #include <sys/socket.h>
+#include <sys/epoll.h>
 #include <netinet/in.h>
 #include <netinet/ip.h> /* superset of previous */
 #include "queue.h"
+#include "logger.h"
 
 #define NR_TASKS 10240 // 每个线程最多允许 10240 个协程
 #define STACK_SIZE 1024*128 // 32bit 128*4K  64bit 128*8K 
+#define MAX_FD 1024
 
 #define COROUTINE_RUNNING 0
 #define COROUTINE_SLEEP 1
@@ -46,14 +49,15 @@ struct task_struct_t;
 
 struct epoll_t {
     int epfd; // epoll fd
-    struct task_struct_t *task[NR_TASKS]; // 记录每个描述符上阻塞的任务。
+    // 每个描述符上阻塞的任务
+    TAILQ_HEAD(block_list, task_struct_t) block_queue[MAX_FD];
 };
 
 // 每个线程持有一个此结构体，用来登记协程
 struct thread_env_t {
     int task_count; // 当前任务个数，最小为 1，因为主协程也算一个任务
     struct task_struct_t *current; // 当前线程中正在运行的那个协程
-    struct epoll_t epoll;
+    struct epoll_t epoll; // 管理阻塞在事件上的队列
     struct task_struct_t *task[NR_TASKS]; // 线程最多持有 10240 个协程
 };
 
@@ -65,8 +69,11 @@ struct task_struct_t {
   void *arg; // 作参数
   struct thread_env_t *thread_env; // 指向自己的线程环境
   int status; // 协程状态
-  int fd; // 当前阻塞在哪个 fd 上
-  // TAILQ_ENTRY(task_struct_t) block; // 阻塞链表节点
+  TAILQ_ENTRY(task_struct_t) block_entry; // 阻塞链表节点
+  int fds_idx; // 指向最后一个元素的下一个位置。
+  int fds[MAX_FD]; // 当前任务阻塞在了哪些 fd 上
+  struct epoll_event events[MAX_FD]; // 当前任务监听了哪些事件
+  int revents[MAX_FD]; // 当前任务收到哪些事件
   void *stack[STACK_SIZE]; // 协程运行栈。
 };
 

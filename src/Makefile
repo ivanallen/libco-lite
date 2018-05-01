@@ -7,7 +7,7 @@ OBJ=$(patsubst %.c, ${OBJ_DIR}/%.o, ${SRC})
 AOBJ=${OBJ_DIR}/switch.o
 
 CC=gcc
-CFLAGS=-g -I../include
+CFLAGS=-g -I../include -D_DEBUG
 
 ${LIB_DIR}/libco-lite.a:${OBJ} ${AOBJ}
 	ar -r $@ ${OBJ} ${AOBJ}

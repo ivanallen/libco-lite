@@ -30,6 +30,11 @@ void *do_client(void *arg) {
         }
         buf[n] = '\0';
         printf("recv from %d:%s\n", clifd, buf);
+        n = co_write(clifd, buf, n);
+        if (n < 0) {
+            perror("co_write");
+            exit(-1);
+        }
     }
 }
 
@@ -57,6 +62,7 @@ int main(int argc, char *argv[]) {
     if (argc > 2) {
         port = atoi(argv[2]);
     }
+    printf("listen %s:%d\n", ip, port);
     struct sockaddr_in serv_addr = { 0 };
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = inet_addr(ip);
